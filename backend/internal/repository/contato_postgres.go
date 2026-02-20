@@ -39,7 +39,34 @@ func (r *ContatoPostgres) Create(contato *entity.Contato) error {
 }
 
 func (r *ContatoPostgres) FindAll() ([]*entity.Contato, error) {
-	rows, err := r.db.Query("SELECT c.ID, c.NOME, c.IDADE, t.IDCONTATO, t.ID, t.NUMERO FROM Contato c LEFT JOIN Telefone t ON c.ID = t.IDCONTATO ORDER BY c.ID, t.ID")
+	return r.FindWithFilters("", "")
+}
+
+func (r *ContatoPostgres) FindWithFilters(nome string, numero string) ([]*entity.Contato, error) {
+	query := `
+		SELECT c.ID, c.NOME, c.IDADE, t.IDCONTATO, t.ID, t.NUMERO 
+		FROM Contato c 
+		LEFT JOIN Telefone t ON c.ID = t.IDCONTATO 
+		WHERE 1=1
+	`
+	var args []interface{}
+	argCount := 1
+
+	if nome != "" {
+		query += fmt.Sprintf(" AND c.NOME ILIKE $%d", argCount)
+		args = append(args, "%"+nome+"%")
+		argCount++
+	}
+
+	if numero != "" {
+		query += fmt.Sprintf(" AND EXISTS (SELECT 1 FROM Telefone t2 WHERE t2.IDCONTATO = c.ID AND t2.NUMERO LIKE $%d)", argCount)
+		args = append(args, "%"+numero+"%")
+		argCount++
+	}
+
+	query += " ORDER BY c.ID, t.ID"
+
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -26,6 +26,10 @@ func (s *contatoService) FindAll() ([]*entity.Contato, error) {
 	return s.repo.FindAll()
 }
 
+func (s *contatoService) FindWithFilters(nome string, numero string) ([]*entity.Contato, error) {
+	return s.repo.FindWithFilters(nome, numero)
+}
+
 func (s *contatoService) FindByID(id int64) (*entity.Contato, error) {
 	return s.repo.FindByID(id)
 }

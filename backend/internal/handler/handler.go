@@ -39,7 +39,10 @@ func (h *ContatoHandler) CreateContato(c *gin.Context) {
 }
 
 func (h *ContatoHandler) GetContatos(c *gin.Context) {
-	contatos, err := h.service.FindAll()
+	nome := c.Query("nome")
+	numero := c.Query("numero")
+
+	contatos, err := h.service.FindWithFilters(nome, numero)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

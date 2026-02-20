@@ -15,6 +15,7 @@ WORKDIR /app
 
 COPY --from=builder /app/main .
 COPY migrations ./migrations
+RUN mkdir logs
 
 EXPOSE 8080
 
