@@ -1,0 +1,32 @@
+# --- Binários e Executáveis ---
+backend/cmd/app/app
+backend/main
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# --- Variáveis de Ambiente e Segredos ---
+.env
+backend/.env
+frontend/.env
+*.local
+
+# --- Logs de Auditoria ---
+*.log
+backend/logs/
+logs/
+
+# --- Docker ---
+pgdata/
+
+# --- IDEs e Editores ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Sistema Operacional ---
+.DS_Store
+Thumbs.db
