@@ -1,0 +1,188 @@
+package repository
+
+import (
+	"database/sql"
+	"fmt"
+	"github.com/robitooS/backend/internal/entity"
+)
+
+type ContatoPostgres struct {
+	db *sql.DB
+}
+
+func NewContatoPostgres(db *sql.DB) *ContatoPostgres {
+	return &ContatoPostgres{db: db}
+}
+
+func (r *ContatoPostgres) Create(contato *entity.Contato) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec("INSERT INTO Contato (ID, NOME, IDADE) VALUES ($1, $2, $3)",
+		contato.ID, contato.Nome, contato.Idade)
+	if err != nil {
+		return err
+	}
+
+	for _, telefone := range contato.Telefones {
+		_, err := tx.Exec("INSERT INTO Telefone (IDCONTATO, ID, NUMERO) VALUES ($1, $2, $3)",
+			telefone.IDContato, telefone.ID, telefone.Numero)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (r *ContatoPostgres) FindAll() ([]*entity.Contato, error) {
+	rows, err := r.db.Query("SELECT c.ID, c.NOME, c.IDADE, t.IDCONTATO, t.ID, t.NUMERO FROM Contato c LEFT JOIN Telefone t ON c.ID = t.IDCONTATO ORDER BY c.ID, t.ID")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	contactsMap := make(map[int64]*entity.Contato)
+	var contacts []*entity.Contato
+
+	for rows.Next() {
+		var (
+			contatoID         sql.NullInt64
+			contatoNome       sql.NullString
+			contatoIdade      sql.NullInt32
+			telefoneIDContato sql.NullInt64
+			telefoneID        sql.NullInt64
+			telefoneNumero    sql.NullString
+		)
+		err := rows.Scan(&contatoID, &contatoNome, &contatoIdade, &telefoneIDContato, &telefoneID, &telefoneNumero)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, ok := contactsMap[contatoID.Int64]; !ok {
+			contato := &entity.Contato{
+				ID:    contatoID.Int64,
+				Nome:  contatoNome.String,
+				Idade: int(contatoIdade.Int32),
+			}
+			contactsMap[contatoID.Int64] = contato
+			contacts = append(contacts, contato)
+		}
+
+		if telefoneID.Valid {
+			contactsMap[contatoID.Int64].Telefones = append(contactsMap[contatoID.Int64].Telefones, entity.Telefone{
+				IDContato: telefoneIDContato.Int64,
+				ID:        telefoneID.Int64,
+				Numero:    telefoneNumero.String,
+			})
+		}
+	}
+	return contacts, nil
+}
+
+func (r *ContatoPostgres) FindByID(id int64) (*entity.Contato, error) {
+	contato := &entity.Contato{}
+	var (
+		contatoID         sql.NullInt64
+		contatoNome       sql.NullString
+		contatoIdade      sql.NullInt32
+		telefoneIDContato sql.NullInt64
+		telefoneID        sql.NullInt64
+		telefoneNumero    sql.NullString
+	)
+
+	rows, err := r.db.Query("SELECT c.ID, c.NOME, c.IDADE, t.IDCONTATO, t.ID, t.NUMERO FROM Contato c LEFT JOIN Telefone t ON c.ID = t.IDCONTATO WHERE c.ID = $1 ORDER BY t.ID", id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	found := false
+	for rows.Next() {
+		err := rows.Scan(&contatoID, &contatoNome, &contatoIdade, &telefoneIDContato, &telefoneID, &telefoneNumero)
+		if err != nil {
+			return nil, err
+		}
+
+		if !found {
+			contato.ID = contatoID.Int64
+			contato.Nome = contatoNome.String
+			contato.Idade = int(contatoIdade.Int32)
+			found = true
+		}
+
+		if telefoneID.Valid {
+			contato.Telefones = append(contato.Telefones, entity.Telefone{
+				IDContato: telefoneIDContato.Int64,
+				ID:        telefoneID.Int64,
+				Numero:    telefoneNumero.String,
+			})
+		}
+	}
+
+	if !found {
+		return nil, fmt.Errorf("contact with ID %d not found", id)
+	}
+
+	return contato, nil
+}
+
+func (r *ContatoPostgres) Update(contato *entity.Contato) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	res, err := tx.Exec("UPDATE Contato SET NOME = $1, IDADE = $2 WHERE ID = $3",
+		contato.Nome, contato.Idade, contato.ID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("contact with ID %d not found for update", contato.ID)
+	}
+
+	_, err = tx.Exec("DELETE FROM Telefone WHERE IDCONTATO = $1", contato.ID)
+	if err != nil {
+		return err
+	}
+
+	for _, telefone := range contato.Telefones {
+		_, err := tx.Exec("INSERT INTO Telefone (IDCONTATO, ID, NUMERO) VALUES ($1, $2, $3)",
+			contato.ID, telefone.ID, telefone.Numero)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (r *ContatoPostgres) Delete(id int64) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec("DELETE FROM Telefone WHERE IDCONTATO = $1", id)
+	if err != nil {
+		return err
+	}
+
+	res, err := tx.Exec("DELETE FROM Contato WHERE ID = $1", id)
+	if err != nil {
+		return err
+	}
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("contact with ID %d not found for deletion", id)
+	}
+
+	return tx.Commit()
+}
