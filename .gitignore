@@ -30,3 +30,9 @@ pgdata/
 # --- Sistema Operacional ---
 .DS_Store
 Thumbs.db
+
+# --- Dependências do Node.js ---
+frontend/node_modules/
+
+# --- Build Output Frontend ---
+frontend/dist/

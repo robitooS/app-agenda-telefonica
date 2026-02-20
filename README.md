@@ -1,110 +1,79 @@
 # Agenda Telefônica
 
-Este é um projeto de aplicação completa (Full-Stack) para uma Agenda Telefônica, demonstrando uma arquitetura moderna com Frontend, Backend e Banco de Dados. Todo o ambiente de desenvolvimento e produção é orquestrado via Docker Compose, garantindo que o usuário precise apenas do Docker instalado para rodar a aplicação inteira.
-
-## Arquitetura
-
-O projeto é construído com as seguintes tecnologias e componentes:
-
-- **Frontend:** [Tecnologia do Frontend - Ex: React, Angular, Vue.js]
-  * Interface de usuário interativa para gerenciar contatos e telefones.
-  * (Assumindo porta 3000, 4200 ou 8080 dependendo da tecnologia)
-- **Backend:** Go (Gin Framework)
-  * API RESTful para manipulação de dados de contatos e telefones.
-  * Implementa regras de negócio, persistência de dados e lógica de exclusão com log.
-  * (Porta padrão: 8080)
-- **Banco de Dados:** PostgreSQL
-  * Armazenamento persistente para contatos e telefones.
-  * Gerenciado por migrações para controle de versão do esquema.
-- **Orquestração:** Docker Compose
-  * Define e executa o ambiente multi-container com um único comando.
+Esta é uma aplicação de Agenda Telefônica Full-Stack, com backend em Go e frontend em React (utilizando Vite), orquestrada inteiramente via Docker Compose.
 
 ## Pré-requisitos
 
-Para executar a aplicação completa, você precisará ter as seguintes ferramentas instaladas em sua máquina:
+Para executar a aplicação, você só precisa ter as seguintes ferramentas instaladas em sua máquina:
 
-- **Git:** Para clonar o repositório.
-- **Docker e Docker Compose:** Essenciais para construir, executar e gerenciar todos os serviços da aplicação (frontend, backend, banco de dados) de forma isolada e consistente.
+- **Docker:** Incluindo Docker Compose.
 
-## Como Executar a Aplicação Completa
+## Configuração do Ambiente
 
-Siga estes passos para ter o ambiente de desenvolvimento completamente funcional.
+1.  **Clone o Repositório:**
+    ```bash
+    git clone [URL_DO_SEU_REPOSITÓRIO] # Substitua pela URL real do repositório
+    cd app-agenda-telefonica
+    ```
 
-### Passo 1: Clone o Repositório
+2.  **Configure as Variáveis de Ambiente:**
+    No diretório `backend/`, renomeie o arquivo `.env.example` para `.env` e configure as variáveis necessárias.
+    ```bash
+    cd backend
+    cp .env.example .env
+    ```
+    Edite o arquivo `backend/.env` com suas configurações, especialmente para o banco de dados. Um exemplo básico seria:
+    ```
+    # backend/.env
+    DB_USER=postgres
+    DB_PASS=postgres
+    DB_HOST=db # Nome do serviço do banco de dados no docker-compose.yml
+    DB_PORT=5432
+    DB_NAME=agenda
+    API_PORT=8080
+    LOG_PATH=logs/exclusao.log
+    ```
+    *   Certifique-se de que `DB_HOST` corresponde ao nome do serviço do banco de dados definido no seu arquivo `docker-compose.yml`.
+    *   O `API_PORT` no backend deve corresponder à porta exposta pelo container do backend no `docker-compose.yml`.
 
-Abra seu terminal e clone este repositório para a sua máquina local:
+## Como Executar a Aplicação
 
-```bash
-git clone https://github.com/Higor-Paulino/app-agenda-telefonica.git
-cd app-agenda-telefonica
-```
-
-### Passo 2: Arquivos de Configuração `.env`
-
-Crie os arquivos de ambiente necessários para o backend e (futuramente) para o frontend.
-
-* **Para o Backend:** O repositório já deve incluir `backend/.env` com os valores padrão. Se não existir, ou para sobrescrever, crie-o.
-
-  Exemplo de `backend/.env` (assumindo que o `DB_HOST` será o nome do serviço no Docker Compose):
-
-  ```
-  DB_USER=postgres
-  DB_PASS=postgres
-  DB_HOST=localhost
-  DB_PORT=5432
-  DB_NAME=agenda
-  API_PORT=8080
-  LOG_PATH=logs/exclusao.log
-  ```
-* **Para o Frontend:** (Este arquivo será necessário quando o frontend for implementado)
-  Crie um arquivo `frontend/.env` (ou similar) com as variáveis que o frontend precisará para se comunicar com o backend, por exemplo:
-
-  ```
-  REACT_APP_API_URL=http://localhost:8080
-  ```
-
-  *Atenção: O host `localhost` aqui é para o frontend rodando no seu navegador acessar o backend exposto na porta 8080 da sua máquina.*
-
-### Passo 3: Inicie a Aplicação com Docker Compose
-
-Na raiz do projeto, execute o seguinte comando para construir as imagens (se necessário) e iniciar todos os serviços da aplicação (frontend, backend e banco de dados) em segundo plano:
+Na raiz do projeto (onde se encontra o arquivo `docker-compose.yml`), execute o seguinte comando:
 
 ```bash
 docker-compose up --build -d
 ```
 
-* O `-d` roda os containers em segundo plano.
-* O `--build` garante que as imagens mais recentes sejam construídas a partir dos Dockerfiles.
+*   `--build`: Garante que as imagens Docker sejam construídas a partir dos `Dockerfile`s.
+*   `-d`: Executa os containers em segundo plano.
 
-### Passo 4: Acesse a Aplicação
+Este comando iniciará todos os serviços necessários (backend, frontend e banco de dados) configurados no `docker-compose.yml`.
 
-* **Frontend:** Uma vez que todos os serviços estejam rodando, acesse a aplicação frontend em seu navegador:
-  `http://localhost:[PORTA_DO_FRONT]` (ex: `http://localhost:3000` se for React)
-* **Backend API:** A API do backend estará disponível para requisições externas em:
-  `http://localhost:8080`
+## Acessando a Aplicação
+
+*   **Frontend:** Acesse a aplicação no seu navegador em `http://localhost:[PORTA_DO_FRONTEND]` (a porta exata dependerá da sua configuração no `docker-compose.yml`).
+*   **Backend API:** A API do backend estará disponível em `http://localhost:[PORTA_DO_BACKEND]` (a porta exata dependerá da sua configuração no `docker-compose.yml`, geralmente 8080).
 
 ## Testando a API do Backend
 
-Você pode usar o script de teste para verificar as funcionalidades da API do backend.
+O script `test_api.sh` na raiz do projeto pode ser usado para testar a API do backend.
 
-Em um terminal na raiz do projeto, certifique-se de que o script tenha permissão de execução:
-
-```bash
-chmod +x test_api.sh
-```
-
-Depois, execute o teste:
-
-```bash
-./test_api.sh
-```
+1.  Torne o script executável:
+    ```bash
+    chmod +x test_api.sh
+    ```
+2.  Execute o teste:
+    ```bash
+    ./test_api.sh
+    ```
+    *Nota: Certifique-se de que o script `test_api.sh` esteja configurado para se conectar à porta correta do backend exposta pelo Docker Compose.*
 
 ## Estrutura de Pastas
 
-- `backend/`: Contém o código fonte do backend em Go, `Dockerfile`, `go.mod`, etc.
-- `frontend/`: Contém o código fonte do frontend (a ser implementado).
-- `migrations/`: Contém os arquivos de migração SQL para o banco de dados.
-- `docker-compose.yml`: Define a orquestração de todos os serviços.
+- `backend/`: Contém o código fonte do backend em Go, `Dockerfile`, `go.mod`, `migrations/`, e arquivos de configuração (`.env.example`).
+- `frontend/`: Contém o código fonte do frontend (React/Vite).
+- `docker-compose.yml`: Define a orquestração de todos os serviços (backend, frontend, banco de dados).
+- `README.md`: Este arquivo.
 - `test_api.sh`: Script para testar a API do backend.
 
 ## Documentação da API do Backend
