@@ -3,7 +3,7 @@ import { ContactList } from './components/ContactList';
 import { ContactForm } from './components/ContactForm';
 import { contactService } from './services/api';
 import { type Contato } from './types';
-import { Search, Plus, UserPlus } from 'lucide-react';
+import { Search, UserPlus } from 'lucide-react';
 import './App.css';
 
 function App() {
@@ -25,9 +25,10 @@ function App() {
     setLoading(true);
     try {
       const response = await contactService.list(searchName, searchPhone);
-      setContacts(response.data);
+      setContacts(response.data || []); // Garante que seja um array, mesmo que response.data seja null/undefined
     } catch (error) {
-      console.warn('Backend offline, usando dados em cache/exemplo.');
+      console.warn('Backend offline ou erro ao buscar contatos, usando array vazio.');
+      setContacts([]); // Define como array vazio em caso de erro
     } finally {
       setLoading(false);
     }
