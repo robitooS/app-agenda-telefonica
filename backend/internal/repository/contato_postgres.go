@@ -200,11 +200,6 @@ func (r *ContatoPostgres) Delete(ctx context.Context, id int64) error {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, "DELETE FROM Telefone WHERE IDCONTATO = $1", id)
-	if err != nil {
-		return errors.WrapErrorf(err, "repositorio: falha ao deletar telefones do contato %d", id)
-	}
-
 	res, err := tx.ExecContext(ctx, "DELETE FROM Contato WHERE ID = $1", id)
 	if err != nil {
 		return errors.WrapErrorf(err, "repositorio: falha ao deletar contato %d", id)
