@@ -13,8 +13,8 @@ type Config struct {
 	DB_PORT   string
 	DB_NAME   string
 	DB_SOURCE string
-	LOG_PATH  string
 	API_PORT  string
+	DelLogPath string // Caminho para o log de deleções (arquivo .txt)
 }
 
 func LoadConfig() (*Config, error) {
@@ -30,16 +30,16 @@ func LoadConfig() (*Config, error) {
 	dbHost := os.Getenv("DB_HOST")
 	dbPort := os.Getenv("DB_PORT")
 	dbName := os.Getenv("DB_NAME")
-	logPath := os.Getenv("LOG_PATH")
 	apiPort := os.Getenv("API_PORT")
+	delLogPath := os.Getenv("DEL_LOG_PATH")
 
 	dbSource := "postgresql://" + dbUser + ":" + dbPass + "@" + dbHost + ":" + dbPort + "/" + dbName + "?sslmode=disable"
 
-	if logPath == "" {
-		logPath = "logs/exclusao.log"
-	}
 	if apiPort == "" {
 		apiPort = "8080"
+	}
+	if delLogPath == "" {
+		delLogPath = "logs/deleted_contacts.txt" 
 	}
 
 	return &Config{
@@ -49,7 +49,7 @@ func LoadConfig() (*Config, error) {
 		DB_PORT:   dbPort,
 		DB_NAME:   dbName,
 		DB_SOURCE: dbSource,
-		LOG_PATH:  logPath,
 		API_PORT:  apiPort,
+		DelLogPath: delLogPath,
 	}, nil
 }
