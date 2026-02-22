@@ -4,16 +4,18 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/robitooS/backend/internal/entity"
 	"github.com/robitooS/backend/internal/service"
+	"github.com/robitooS/backend/internal/logger"
 	"net/http"
 	"strconv"
 )
 
 type ContatoHandler struct {
 	service service.ContatoService
+	delLogPath string
 }
 
-func NewContatoHandler(s service.ContatoService) *ContatoHandler {
-	return &ContatoHandler{service: s}
+func NewContatoHandler(s service.ContatoService, delLogPath string) *ContatoHandler {
+	return &ContatoHandler{service: s, delLogPath: delLogPath}
 }
 
 func (h *ContatoHandler) RegisterRoutes(router *gin.Engine) {
@@ -31,7 +33,8 @@ func (h *ContatoHandler) CreateContato(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.Create(&contato); err != nil {
+	ctx := c.Request.Context()
+	if err := h.service.Create(ctx, &contato); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -42,7 +45,8 @@ func (h *ContatoHandler) GetContatos(c *gin.Context) {
 	nome := c.Query("nome")
 	numero := c.Query("numero")
 
-	contatos, err := h.service.FindWithFilters(nome, numero)
+	ctx := c.Request.Context()
+	contatos, err := h.service.FindWithFilters(ctx, nome, numero)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -57,7 +61,8 @@ func (h *ContatoHandler) GetContatoByID(c *gin.Context) {
 		return
 	}
 
-	contato, err := h.service.FindByID(id)
+	ctx := c.Request.Context()
+	contato, err := h.service.FindByID(ctx, id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -79,7 +84,8 @@ func (h *ContatoHandler) UpdateContato(c *gin.Context) {
 	}
 	contato.ID = id // Garante que o ID da URL seja usado
 
-	if err := h.service.Update(&contato); err != nil {
+	ctx := c.Request.Context()
+	if err := h.service.Update(ctx, &contato); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -93,9 +99,11 @@ func (h *ContatoHandler) DeleteContato(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.Delete(id); err != nil {
+	ctx := c.Request.Context()
+	if err := h.service.Delete(ctx, id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	logger.LogDeletedContact(h.delLogPath, id)
 	c.JSON(http.StatusNoContent, nil)
 }

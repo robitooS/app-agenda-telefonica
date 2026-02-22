@@ -1,8 +1,10 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
+
 	"github.com/robitooS/backend/internal/entity"
 )
 
@@ -14,21 +16,21 @@ func NewContatoPostgres(db *sql.DB) *ContatoPostgres {
 	return &ContatoPostgres{db: db}
 }
 
-func (r *ContatoPostgres) Create(contato *entity.Contato) error {
-	tx, err := r.db.Begin()
+func (r *ContatoPostgres) Create(ctx context.Context, contato *entity.Contato) error {
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec("INSERT INTO Contato (ID, NOME, IDADE) VALUES ($1, $2, $3)",
+	_, err = tx.ExecContext(ctx, "INSERT INTO Contato (ID, NOME, IDADE) VALUES ($1, $2, $3)",
 		contato.ID, contato.Nome, contato.Idade)
 	if err != nil {
 		return err
 	}
 
 	for _, telefone := range contato.Telefones {
-		_, err := tx.Exec("INSERT INTO Telefone (IDCONTATO, ID, NUMERO) VALUES ($1, $2, $3)",
+		_, err := tx.ExecContext(ctx, "INSERT INTO Telefone (IDCONTATO, ID, NUMERO) VALUES ($1, $2, $3)",
 			telefone.IDContato, telefone.ID, telefone.Numero)
 		if err != nil {
 			return err
@@ -38,11 +40,11 @@ func (r *ContatoPostgres) Create(contato *entity.Contato) error {
 	return tx.Commit()
 }
 
-func (r *ContatoPostgres) FindAll() ([]*entity.Contato, error) {
-	return r.FindWithFilters("", "")
+func (r *ContatoPostgres) FindAll(ctx context.Context) ([]*entity.Contato, error) {
+	return r.FindWithFilters(ctx, "", "")
 }
 
-func (r *ContatoPostgres) FindWithFilters(nome string, numero string) ([]*entity.Contato, error) {
+func (r *ContatoPostgres) FindWithFilters(ctx context.Context, nome string, numero string) ([]*entity.Contato, error) {
 	query := `
 		SELECT c.ID, c.NOME, c.IDADE, t.IDCONTATO, t.ID, t.NUMERO 
 		FROM Contato c 
@@ -66,7 +68,7 @@ func (r *ContatoPostgres) FindWithFilters(nome string, numero string) ([]*entity
 
 	query += " ORDER BY c.ID, t.ID"
 
-	rows, err := r.db.Query(query, args...)
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +112,7 @@ func (r *ContatoPostgres) FindWithFilters(nome string, numero string) ([]*entity
 	return contacts, nil
 }
 
-func (r *ContatoPostgres) FindByID(id int64) (*entity.Contato, error) {
+func (r *ContatoPostgres) FindByID(ctx context.Context, id int64) (*entity.Contato, error) {
 	contato := &entity.Contato{}
 	var (
 		contatoID         sql.NullInt64
@@ -121,7 +123,7 @@ func (r *ContatoPostgres) FindByID(id int64) (*entity.Contato, error) {
 		telefoneNumero    sql.NullString
 	)
 
-	rows, err := r.db.Query("SELECT c.ID, c.NOME, c.IDADE, t.IDCONTATO, t.ID, t.NUMERO FROM Contato c LEFT JOIN Telefone t ON c.ID = t.IDCONTATO WHERE c.ID = $1 ORDER BY t.ID", id)
+	rows, err := r.db.QueryContext(ctx, "SELECT c.ID, c.NOME, c.IDADE, t.IDCONTATO, t.ID, t.NUMERO FROM Contato c LEFT JOIN Telefone t ON c.ID = t.IDCONTATO WHERE c.ID = $1 ORDER BY t.ID", id)
 	if err != nil {
 		return nil, err
 	}
@@ -157,14 +159,14 @@ func (r *ContatoPostgres) FindByID(id int64) (*entity.Contato, error) {
 	return contato, nil
 }
 
-func (r *ContatoPostgres) Update(contato *entity.Contato) error {
-	tx, err := r.db.Begin()
+func (r *ContatoPostgres) Update(ctx context.Context, contato *entity.Contato) error {
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	res, err := tx.Exec("UPDATE Contato SET NOME = $1, IDADE = $2 WHERE ID = $3",
+	res, err := tx.ExecContext(ctx, "UPDATE Contato SET NOME = $1, IDADE = $2 WHERE ID = $3",
 		contato.Nome, contato.Idade, contato.ID)
 	if err != nil {
 		return err
@@ -174,13 +176,13 @@ func (r *ContatoPostgres) Update(contato *entity.Contato) error {
 		return fmt.Errorf("contact with ID %d not found for update", contato.ID)
 	}
 
-	_, err = tx.Exec("DELETE FROM Telefone WHERE IDCONTATO = $1", contato.ID)
+	_, err = tx.ExecContext(ctx, "DELETE FROM Telefone WHERE IDCONTATO = $1", contato.ID)
 	if err != nil {
 		return err
 	}
 
 	for _, telefone := range contato.Telefones {
-		_, err := tx.Exec("INSERT INTO Telefone (IDCONTATO, ID, NUMERO) VALUES ($1, $2, $3)",
+		_, err := tx.ExecContext(ctx, "INSERT INTO Telefone (IDCONTATO, ID, NUMERO) VALUES ($1, $2, $3)",
 			contato.ID, telefone.ID, telefone.Numero)
 		if err != nil {
 			return err
@@ -190,19 +192,19 @@ func (r *ContatoPostgres) Update(contato *entity.Contato) error {
 	return tx.Commit()
 }
 
-func (r *ContatoPostgres) Delete(id int64) error {
-	tx, err := r.db.Begin()
+func (r *ContatoPostgres) Delete(ctx context.Context, id int64) error {
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec("DELETE FROM Telefone WHERE IDCONTATO = $1", id)
+	_, err = tx.ExecContext(ctx, "DELETE FROM Telefone WHERE IDCONTATO = $1", id)
 	if err != nil {
 		return err
 	}
 
-	res, err := tx.Exec("DELETE FROM Contato WHERE ID = $1", id)
+	res, err := tx.ExecContext(ctx, "DELETE FROM Contato WHERE ID = $1", id)
 	if err != nil {
 		return err
 	}

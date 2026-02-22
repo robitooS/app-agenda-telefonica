@@ -1,12 +1,16 @@
 package service
 
-import "github.com/robitooS/backend/internal/entity"
+import (
+	"context"
+
+	"github.com/robitooS/backend/internal/entity"
+)
 
 type ContatoService interface {
-	Create(contato *entity.Contato) error
-	FindAll() ([]*entity.Contato, error)
-	FindWithFilters(nome string, numero string) ([]*entity.Contato, error)
-	FindByID(id int64) (*entity.Contato, error)
-	Update(contato *entity.Contato) error
-	Delete(id int64) error
+	Create(ctx context.Context, contato *entity.Contato) error
+	FindAll(ctx context.Context) ([]*entity.Contato, error)
+	FindWithFilters(ctx context.Context, nome string, numero string) ([]*entity.Contato, error)
+	FindByID(ctx context.Context, id int64) (*entity.Contato, error)
+	Update(ctx context.Context, contato *entity.Contato) error
+	Delete(ctx context.Context, id int64) error
 }
