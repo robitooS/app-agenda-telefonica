@@ -10,17 +10,7 @@ import (
 )
 
 // RunMigrations executa as migrações do banco de dados.
-func RunMigrations(databaseURL string) error {
-	db, err := sql.Open("pgx", databaseURL)
-	if err != nil {
-		return fmt.Errorf("falha ao conectar ao banco de dados para migração: %w", err)
-	}
-	defer db.Close()
-
-	if err := db.Ping(); err != nil {
-		return fmt.Errorf("não foi possível conectar ao banco de dados (ping falhou): %w", err)
-	}
-
+func RunMigrations(db *sql.DB) error {
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
 		return fmt.Errorf("falha ao criar a instância do driver de migração: %w", err)
