@@ -42,6 +42,8 @@ services:
     container_name: agenda-frontend
     ports:
       - "3000:80"
+    environment:
+      - VITE_API_BASE_URL=http://backend:8080
     depends_on:
       - backend
 
