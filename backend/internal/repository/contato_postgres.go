@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/robitooS/backend/internal/entity"
+	"github.com/robitooS/backend/internal/errors"
 )
 
 type ContatoPostgres struct {
@@ -19,21 +20,21 @@ func NewContatoPostgres(db *sql.DB) *ContatoPostgres {
 func (r *ContatoPostgres) Create(ctx context.Context, contato *entity.Contato) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return errors.WrapErrorf(err, "repositorio: falha ao iniciar transacao para criar contato")
 	}
 	defer tx.Rollback()
 
 	_, err = tx.ExecContext(ctx, "INSERT INTO Contato (ID, NOME, IDADE) VALUES ($1, $2, $3)",
 		contato.ID, contato.Nome, contato.Idade)
 	if err != nil {
-		return err
+		return errors.WrapErrorf(err, "repositorio: falha ao inserir contato")
 	}
 
 	for _, telefone := range contato.Telefones {
 		_, err := tx.ExecContext(ctx, "INSERT INTO Telefone (IDCONTATO, ID, NUMERO) VALUES ($1, $2, $3)",
 			telefone.IDContato, telefone.ID, telefone.Numero)
 		if err != nil {
-			return err
+			return errors.WrapErrorf(err, "repositorio: falha ao inserir telefone para o contato %d", contato.ID)
 		}
 	}
 
@@ -70,7 +71,7 @@ func (r *ContatoPostgres) FindWithFilters(ctx context.Context, nome string, nume
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, errors.WrapErrorf(err, "repositorio: falha ao consultar contatos com filtros")
 	}
 	defer rows.Close()
 
@@ -88,7 +89,7 @@ func (r *ContatoPostgres) FindWithFilters(ctx context.Context, nome string, nume
 		)
 		err := rows.Scan(&contatoID, &contatoNome, &contatoIdade, &telefoneIDContato, &telefoneID, &telefoneNumero)
 		if err != nil {
-			return nil, err
+			return nil, errors.WrapErrorf(err, "repositorio: falha ao escanear linha da consulta de contatos com filtros")
 		}
 
 		if _, ok := contactsMap[contatoID.Int64]; !ok {
@@ -125,7 +126,7 @@ func (r *ContatoPostgres) FindByID(ctx context.Context, id int64) (*entity.Conta
 
 	rows, err := r.db.QueryContext(ctx, "SELECT c.ID, c.NOME, c.IDADE, t.IDCONTATO, t.ID, t.NUMERO FROM Contato c LEFT JOIN Telefone t ON c.ID = t.IDCONTATO WHERE c.ID = $1 ORDER BY t.ID", id)
 	if err != nil {
-		return nil, err
+		return nil, errors.WrapErrorf(err, "repositorio: falha ao consultar contato por ID %d", id)
 	}
 	defer rows.Close()
 
@@ -133,7 +134,7 @@ func (r *ContatoPostgres) FindByID(ctx context.Context, id int64) (*entity.Conta
 	for rows.Next() {
 		err := rows.Scan(&contatoID, &contatoNome, &contatoIdade, &telefoneIDContato, &telefoneID, &telefoneNumero)
 		if err != nil {
-			return nil, err
+			return nil, errors.WrapErrorf(err, "repositorio: falha ao escanear linha da consulta de contato por ID %d", id)
 		}
 
 		if !found {
@@ -153,7 +154,7 @@ func (r *ContatoPostgres) FindByID(ctx context.Context, id int64) (*entity.Conta
 	}
 
 	if !found {
-		return nil, fmt.Errorf("contact with ID %d not found", id)
+		return nil, errors.ErrNotFound
 	}
 
 	return contato, nil
@@ -162,30 +163,30 @@ func (r *ContatoPostgres) FindByID(ctx context.Context, id int64) (*entity.Conta
 func (r *ContatoPostgres) Update(ctx context.Context, contato *entity.Contato) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return errors.WrapErrorf(err, "repositorio: falha ao iniciar transacao para atualizar contato %d", contato.ID)
 	}
 	defer tx.Rollback()
 
 	res, err := tx.ExecContext(ctx, "UPDATE Contato SET NOME = $1, IDADE = $2 WHERE ID = $3",
 		contato.Nome, contato.Idade, contato.ID)
 	if err != nil {
-		return err
+		return errors.WrapErrorf(err, "repositorio: falha ao atualizar contato %d", contato.ID)
 	}
 	rowsAffected, _ := res.RowsAffected()
 	if rowsAffected == 0 {
-		return fmt.Errorf("contact with ID %d not found for update", contato.ID)
+		return errors.ErrNotFound
 	}
 
 	_, err = tx.ExecContext(ctx, "DELETE FROM Telefone WHERE IDCONTATO = $1", contato.ID)
 	if err != nil {
-		return err
+		return errors.WrapErrorf(err, "repositorio: falha ao deletar telefones do contato %d antes da atualizacao", contato.ID)
 	}
 
 	for _, telefone := range contato.Telefones {
 		_, err := tx.ExecContext(ctx, "INSERT INTO Telefone (IDCONTATO, ID, NUMERO) VALUES ($1, $2, $3)",
 			contato.ID, telefone.ID, telefone.Numero)
 		if err != nil {
-			return err
+			return errors.WrapErrorf(err, "repositorio: falha ao inserir telefone %d para o contato %d durante a atualizacao", telefone.ID, contato.ID)
 		}
 	}
 
@@ -195,22 +196,22 @@ func (r *ContatoPostgres) Update(ctx context.Context, contato *entity.Contato) e
 func (r *ContatoPostgres) Delete(ctx context.Context, id int64) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return errors.WrapErrorf(err, "repositorio: falha ao iniciar transacao para deletar contato %d", id)
 	}
 	defer tx.Rollback()
 
 	_, err = tx.ExecContext(ctx, "DELETE FROM Telefone WHERE IDCONTATO = $1", id)
 	if err != nil {
-		return err
+		return errors.WrapErrorf(err, "repositorio: falha ao deletar telefones do contato %d", id)
 	}
 
 	res, err := tx.ExecContext(ctx, "DELETE FROM Contato WHERE ID = $1", id)
 	if err != nil {
-		return err
+		return errors.WrapErrorf(err, "repositorio: falha ao deletar contato %d", id)
 	}
 	rowsAffected, _ := res.RowsAffected()
 	if rowsAffected == 0 {
-		return fmt.Errorf("contact with ID %d not found for deletion", id)
+		return errors.ErrNotFound
 	}
 
 	return tx.Commit()
