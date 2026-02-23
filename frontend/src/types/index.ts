@@ -10,3 +10,9 @@ export interface Contato {
   idade: number;
   telefones: Telefone[];
 }
+
+export interface APIError {
+  code: string;
+  message: string;
+  details?: string[];
+}

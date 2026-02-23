@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ContactList } from './components/ContactList';
 import { ContactForm } from './components/ContactForm';
 import { contactService } from './services/api';
-import { type Contato } from './types';
+import { type Contato, type APIError } from './types';
 import { Search, UserPlus } from 'lucide-react';
 import './App.css';
 
@@ -55,7 +55,15 @@ function App() {
       fetchContacts();
     } catch (error: any) {
       console.error('Erro ao salvar contato:', error);
-      alert(error.response?.data?.error || 'Erro ao salvar contato.');
+      let errorMessage = 'Erro ao salvar contato.';
+      if (error.response && error.response.data && typeof error.response.data === 'object' && 'message' in error.response.data) {
+        const apiError = error.response.data as APIError;
+        errorMessage = apiError.message;
+        if (apiError.details && apiError.details.length > 0) {
+          errorMessage += '\nDetalhes: ' + apiError.details.join(', ');
+        }
+      }
+      alert(errorMessage);
     }
   };
 
@@ -64,9 +72,17 @@ function App() {
       try {
         await contactService.delete(id);
         fetchContacts();
-      } catch (error) {
+      } catch (error: any) {
         console.error('Erro ao excluir contato:', error);
-        alert('Erro ao excluir contato.');
+        let errorMessage = 'Erro ao excluir contato.';
+        if (error.response && error.response.data && typeof error.response.data === 'object' && 'message' in error.response.data) {
+          const apiError = error.response.data as APIError;
+          errorMessage = apiError.message;
+          if (apiError.details && apiError.details.length > 0) {
+            errorMessage += '\nDetalhes: ' + apiError.details.join(', ');
+          }
+        }
+        alert(errorMessage);
       }
     }
   };
