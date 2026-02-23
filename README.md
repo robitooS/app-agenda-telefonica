@@ -39,7 +39,7 @@ Esta é uma aplicação de Agenda Telefônica completa, desenvolvida com backend
 
 Para executar a aplicação, você só precisa ter as seguintes ferramentas instaladas em sua máquina:
 
-* **Docker:** Incluindo Docker Compose (versão 1.29.0+ ou Docker Desktop).
+* **Docker:** Incluindo **Docker Compose V2**. Verifique sua versão com `docker compose version`. Se encontrar problemas, consulte a seção "Solução de Problemas Comuns".
 * **Git:** Para clonar o repositório.
 
 ## Configuração e Instalação
@@ -63,13 +63,11 @@ Para executar a aplicação, você só precisa ter as seguintes ferramentas inst
 Na raiz do projeto (onde se encontra o arquivo `docker-compose.yml`), execute o seguinte comando:
 
 ```bash
-docker-compose up --build -d
+docker compose up --build
 ```
 
-* `--build`: Garante que as imagens Docker sejam construídas a partir dos `Dockerfile`s.
-* `-d`: Executa os containers em segundo plano (detached mode).
-
-Este comando iniciará e orquestrará todos os serviços necessários (backend, frontend e banco de dados).
+* `--build`: Garante que as imagens Docker sejam construídas a partir dos `Dockerfiles`.
+* Este comando iniciará e orquestrará todos os serviços necessários (backend, frontend e banco de dados).
 
 ### Detalhes Importantes:
 
@@ -125,6 +123,35 @@ Exemplos de códigos de erro: `NAO_ENCONTRADO`, `ENTRADA_INVALIDA`, `JA_EXISTE`,
 | `GET`    | `/contatos/{id}` | Busca um único contato pelo seu ID.                                                                                                                                                    | N/A                                                                                          | `200 OK` (Contato), `404 Not Found` (Contato não encontrado), `400 Bad Request` (ID inválido), `500 Internal Server Error` (Erro interno)                              |
 | `PUT`    | `/contatos/{id}` | Atualiza um contato existente e seus telefones. Todos os telefones existentes serão substituídos pelos fornecidos no payload.                                                         | `{"nome": "Maria Antunes", "idade": 29, "telefones": [{"id": 1, "numero": "99999-0000"}]}` | `200 OK` (Contato Atualizado), `404 Not Found` (Contato não encontrado), `400 Bad Request` (Entrada inválida/ID inválido), `500 Internal Server Error` (Erro interno) |
 | `DELETE` | `/contatos/{id}` | Deleta um contato pelo seu ID. Esta operação também removerá automaticamente todos os telefones associados a ele, devido à configuração `ON DELETE CASCADE` no banco de dados. | N/A                                                                                          | `204 No Content` (Sucesso), `404 Not Found` (Contato não encontrado), `400 Bad Request` (ID inválido), `500 Internal Server Error` (Erro interno)                      |
+
+## Solução de Problemas Comuns
+
+### `ModuleNotFoundError: No module named 'distutils'` ao executar `docker-compose up`
+
+Este erro ocorre geralmente quando o `docker-compose` (versão V1) é instalado via `pip` em um ambiente Python mais recente (Python 3.10+), que removeu o módulo `distutils`.
+
+**Solução Recomendada:**
+
+1. **Use o Docker Compose V2:** A versão V2 é um plugin do Docker CLI e é a forma moderna e recomendada de uso.
+2. **Verifique sua instalação:**
+   * Tente executar `docker compose version` (note o espaço entre `docker` e `compose`).
+   * Se este comando funcionar, você já tem o V2 instalado.
+3. **Se não tiver o V2 ou o comando acima não funcionar:**
+   * **Desinstale qualquer `docker-compose` antigo:**
+     ```bash
+     sudo apt remove docker-compose # Para instalações via apt (Debian/Ubuntu)
+     pip uninstall docker-compose # Para instalações via pip
+     ```
+   * **Instale o Docker Compose V2** (se já não veio com o Docker Desktop ou sua instalação do Docker Engine para Linux):
+     ```bash
+     # Crie a pasta de plugins se não existir
+     sudo mkdir -p /usr/local/lib/docker/cli-plugins/
+     # Baixe o binário (substitua a URL pela versão mais recente para sua arquitetura em https://github.com/docker/compose/releases)
+     sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
+     # Torne-o executável
+     sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+     ```
+   * Após a instalação, use sempre `docker compose up --build -d` (com espaço).
 
 ## Estrutura de Pastas
 
