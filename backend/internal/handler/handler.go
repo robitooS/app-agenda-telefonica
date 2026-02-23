@@ -24,8 +24,9 @@ func NewContatoHandler(s service.ContatoService, delLogPath string) *ContatoHand
 }
 
 func (h *ContatoHandler) handleError(c *gin.Context, err error) {
+	log.Printf("DEBUG HANDLER: Erro recebido: %v, tipo: %T", err, err)
 	var apiError *errorsCustom.APIError
-	// Tenta desembrulhar o erro para ver se é um dos nossos erros customizados
+
 	if errors.Is(err, errorsCustom.ErrNotFound) {
 		apiError = errorsCustom.NewAPIError("NAO_ENCONTRADO", "Recurso nao encontrado", err.Error())
 		c.JSON(http.StatusNotFound, apiError)

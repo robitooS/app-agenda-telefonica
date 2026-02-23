@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 
+	"github.com/lib/pq"
 	"github.com/robitooS/backend/internal/entity"
 	"github.com/robitooS/backend/internal/errors"
 )
@@ -27,6 +29,12 @@ func (r *ContatoPostgres) Create(ctx context.Context, contato *entity.Contato) e
 	_, err = tx.ExecContext(ctx, "INSERT INTO Contato (ID, NOME, IDADE) VALUES ($1, $2, $3)",
 		contato.ID, contato.Nome, contato.Idade)
 	if err != nil {
+		log.Printf("DEBUG REPO CREATE: Erro na insercao de Contato: %v, tipo: %T", err, err) 
+		if pqErr, ok := err.(*pq.Error); ok {
+			if pqErr.Code == "23505" { // 23505 é o código para unique_violation
+				return errors.WrapErrorf(errors.ErrAlreadyExists, "repositorio: contato com ID %d ja existe", contato.ID)
+			}
+		}
 		return errors.WrapErrorf(err, "repositorio: falha ao inserir contato")
 	}
 

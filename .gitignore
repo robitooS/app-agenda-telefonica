@@ -37,4 +37,5 @@ frontend/node_modules/
 # --- Build Output Frontend ---
 frontend/dist/
 
+# --- Arquivos locais ---
 correcoes.md
